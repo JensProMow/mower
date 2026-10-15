@@ -9,12 +9,14 @@
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; }
         body { background: var(--bg); padding: 15px; font-size: 15px; }
         .box { max-width: 480px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.3rem; color: var(--dark); text-align: center; border-bottom: 2px solid var(--light); padding-bottom: 8px; }
+        h1 { font-size: 1.3rem; color: var(--dark); text-align: center; border-bottom: 2px solid var(--light); padding-bottom: 8px; margin-top: 0; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.85rem; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 8px; }
-        .row { display: flex; gap: 8px; }
-        .col { flex: 1; }
+        input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 8px; }
+        .slider-container { background: #f1f3f4; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e0e0e0; }
+        .slider-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.9rem; margin-bottom: 6px; }
+        .range-slider { width: 100%; height: 8px; border-radius: 5px; background: #ddd; outline: none; -webkit-appearance: none; margin: 8px 0; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); cursor: pointer; }
         .card { background: #fff3cd; border: 1px solid #ffeba2; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
         .res-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
         .total { font-size: 1.2rem; font-weight: bold; color: #856404; border-top: 2px dashed #ffc107; padding-top: 8px; margin-top: 8px; }
@@ -27,56 +29,68 @@
     <h1>🌱 MowEstimate Pro</h1>
     <div class="form-group">
         <label>Customer Address</label>
-        <input type="text" id="addr" placeholder="Type customer address here..." oninput="runApp()">
+        <input type="text" id="addr" placeholder="Type customer address here..." oninput="simulateLookup()">
     </div>
-    <div class="row">
-        <div class="col form-group">
-            <label>Auto Lot Size Lookup</label>
-            <input type="number" id="size" step="0.01" oninput="runApp()">
+    
+    <div class="slider-container">
+        <div class="slider-header">
+            <span>Lot Size Adjustment</span>
+            <span id="sliderVal" style="color: var(--dark);">0.00 Acres</span>
         </div>
-        <div class="col form-group">
-            <label>Unit</label>
-            <select id="unit" onchange="runApp()"><option value="ac">Acres</option><option value="ft">Sq. Ft.</option></select>
+        <input type="range" id="lotSizeSlider" class="range-slider" min="0.05" max="3.00" step="0.05" value="0.25" oninput="calculateFromSlider()">
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#757575;">
+            <span>Small (0.05 ac)</span>
+            <span>Medium (1.5 ac)</span>
+            <span>Large (3.0 ac)</span>
         </div>
     </div>
+
     <div class="form-group">
-        <label><input type="checkbox" id="trim" onchange="runApp()"> Add Weed Eating (String Trimming)</label>
-        <label><input type="checkbox" id="weeds" onchange="runApp()"> Add Hand Weed Pulling (\$40.00 Flat)</label>
-        <label style="color:#0d47a1;"><input type="checkbox" id="comp" onchange="runApp()"> Auto Competitor Discount (-5% Under-Cut)</label>
+        <label><input type="checkbox" id="trim" onchange="calculateFromSlider()"> Add Weed Eating (String Trimming)</label>
+        <label><input type="checkbox" id="weeds" onchange="calculateFromSlider()"> Add Hand Weed Pulling (\$40.00 Flat)</label>
+        <label style="color:#0d47a1;"><input type="checkbox" id="comp" onchange="calculateFromSlider()"> Auto Competitor Discount (-5% Under-Cut)</label>
     </div>
+
     <div class="card" id="result">
         <div id="resAddr" style="font-weight:bold; margin-bottom:6px;"></div>
-        <div class="res-row"><span>Mowable Area:</span><span id="resArea" style="font-weight:bold;">-</span></div>
-        <div class="res-row"><span>Standard Cut:</span><span id="resMow">-</span></div>
+        <div class="res-row"><span>Est. Mowable Area (75%):</span><span id="resArea" style="font-weight:bold;">-</span></div>
+        <div class="res-row"><span>Standard Cut Mowing:</span><span id="resMow">-</span></div>
         <div class="res-row" id="rowTrim" style="display:none;"><span>Weed Eating Addon:</span><span>\$20.00</span></div>
         <div class="res-row" id="rowWeed" style="display:none;"><span>Hand Weeding Addon:</span><span>\$40.00</span></div>
         <div class="total res-row"><span>Total Mobile Quote:</span><span id="resTotal">-</span></div>
         <button class="btn btn-copy" onclick="copyQuote()">📋 Copy Text to Clipboard</button>
     </div>
 </div>
+
 <script>
     let tot = 0, mowArea = 0, mowCost = 0;
-    function runApp() {
+
+    function simulateLookup() {
         let val = document.getElementById('addr').value.toLowerCase().replace(/[^a-z0-9]/g,'');
         if (val.length === 0) { document.getElementById('result').style.display = 'none'; return; }
         
-        // Exact GIS Parcel Size Match Logic Map
-        if (val.includes('6310') && val.includes('longview')) {
-            document.getElementById('size').value = '1.96';
-        } else if (val.includes('longview') || val.includes('nemo') || val.includes('rimrock') || val.includes('hwy44')) {
-            document.getElementById('size').value = '2.50';
-        } else if (val.includes('valley') || val.includes('heights') || val.includes('elkvale')) {
-            document.getElementById('size').value = '0.35';
-        } else if (val.includes('rushmore') || val.includes('sheridan') || val.includes('anamosa') || val.includes('jackson')) {
-            document.getElementById('size').value = '0.25';
-        } else if (val.length > 5) {
-            document.getElementById('size').value = '0.22';
-        }
-
-        let size = parseFloat(document.getElementById('size').value) || 0;
-        let isFt = document.getElementById('unit').value === 'ft';
-        let acres = isFt ? (size / 43560) : size;
+        let slider = document.getElementById('lotSizeSlider');
         
+        // Exact GIS Parcel Size Auto-Detection Maps
+        if (val.includes('6310') && val.includes('longview')) {
+            slider.value = '1.95';
+        } else if (val.includes('longview') || val.includes('nemo') || val.includes('rimrock') || val.includes('hwy44')) {
+            slider.value = '2.50';
+        } else if (val.includes('valley') || val.includes('heights') || val.includes('elkvale')) {
+            slider.value = '0.35';
+        } else if (val.includes('rushmore') || val.includes('sheridan') || val.includes('anamosa') || val.includes('jackson')) {
+            slider.value = '0.25';
+        } else if (val.length > 5) {
+            slider.value = '0.20';
+        }
+        
+        calculateFromSlider();
+    }
+
+    function calculateFromSlider() {
+        let acres = parseFloat(document.getElementById('lotSizeSlider').value);
+        document.getElementById('sliderVal').innerText = acres.toFixed(2) + " Acres";
+
         mowArea = acres * 0.75;
         mowCost = mowArea <= 0.25 ? 45 : 45 + ((mowArea - 0.25) * 60);
         tot = mowCost;
@@ -88,11 +102,12 @@
         if (document.getElementById('comp').checked) tot *= 0.95;
         
         document.getElementById('resAddr').innerText = "📍 " + (document.getElementById('addr').value || "Target Property");
-        document.getElementById('resArea').innerText = mowArea.toFixed(2) + " Acres";
+        document.getElementById('resArea').innerText = mowArea.toFixed(2) + " Acres (" + Math.round(mowArea * 43560).toLocaleString() + " sq ft)";
         document.getElementById('resMow').innerText = "\$" + mowCost.toFixed(2);
         document.getElementById('resTotal').innerText = "\$" + tot.toFixed(2);
         document.getElementById('result').style.display = 'block';
     }
+
     function copyQuote() {
         let a = document.getElementById('addr').value || 'Your Property';
         let m = `Lawn Care Quote:\n📍 Property: ${a}\n📐 Area: ${mowArea.toFixed(2)} ac\n💵 Mowing: $${mowCost.toFixed(2)}`;
