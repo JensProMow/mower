@@ -106,7 +106,7 @@
 
     <!-- RECURRING FREQUENCY FEATURE -->
     <div class="switch-container">
-        <label for="toggleFrequency" style="font-weight: 600;">Enable Frequency Discounts</label>
+        <label style="font-weight: 600;">Enable Frequency Discounts</label>
         <label class="switch">
             <input type="checkbox" id="toggleFrequency" onchange="toggleSectionRow('frequencyRow'); calculateEstimate();">
             <span class="slider"></span>
@@ -123,7 +123,7 @@
 
     <!-- OBSTACLE DIFFICULTY FEATURE -->
     <div class="switch-container">
-        <label for="toggleObstacles" style="font-weight: 600;">Enable Terrain / Obstacle Markups</label>
+        <label style="font-weight: 600;">Enable Terrain / Obstacle Markups</label>
         <label class="switch">
             <input type="checkbox" id="toggleObstacles" onchange="toggleSectionRow('obstaclesRow'); calculateEstimate();">
             <span class="slider"></span>
@@ -140,7 +140,7 @@
 
     <!-- WEED EATING ESTIMATOR -->
     <div class="switch-container">
-        <label for="toggleWeedEating" style="font-weight: 600;">Add Weed Eating (Trimming)</label>
+        <label style="font-weight: 600;">Add Weed Eating (Trimming)</label>
         <label class="switch">
             <input type="checkbox" id="toggleWeedEating" onchange="toggleSectionRow('weedEatingSection'); calculateEstimate();">
             <span class="slider"></span>
@@ -161,7 +161,7 @@
 
     <!-- HAND WEED PULLING CALCULATOR -->
     <div class="switch-container">
-        <label for="toggleWeeds" style="font-weight: 600;">Add Hand Weed Pulling</label>
+        <label style="font-weight: 600;">Add Hand Weed Pulling</label>
         <label class="switch">
             <input type="checkbox" id="toggleWeeds" onchange="toggleSectionRow('weedingSection'); calculateEstimate();">
             <span class="slider"></span>
@@ -170,3 +170,4 @@
     <div id="weedingSection" class="config-section">
         <div class="form-group">
             <label>Calculation Method</label>
+            <select id="weedMethod" onchange="toggleWeedMethod(); calculateEstimate();">
